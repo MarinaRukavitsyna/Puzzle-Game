@@ -16,7 +16,9 @@
         _elementWidth,
         _elementHeight,
         _currentElement,
-        _currentDropElement;
+        _currentDropElement,
+        _progressTextID,
+        _progressBrickID;
 
     function init() {
         if (document.getElementById(rootElId).length == 0) {
@@ -27,7 +29,7 @@
             _rootElId = rootElId;
 
             _img = new Image();
-            _img.addEventListener('load', createPuzzle, false);
+            _img.addEventListener('load', createPuzzleBoard, false);
             _img.src = imgSrc;
         }
     }
@@ -48,25 +50,121 @@
         _elementHeight = Math.floor(puzzleHeight / rowCount);
     }
 
-    function createPuzzle(e) {
-        // TO-DO: add timer and original image only
+    function createPuzzleBoard(e) {
+        document.getElementById(_rootElId).appendChild(_img);
         initPuzzleBoardBasedOnImage(4, 4);
-        createFrame();
-        initCanvas();
-        initPuzzle();
-        createElements(); // TO-DO: support for touch events
+        createStartGameCounter(); // TO-DO: check scroll bar in IE
 
-
-        //addTimer("1", 3);
         window.setTimeout(function () {
-            createProgressBar();
-            startGame();
+            createFrame();
+            initCanvas();
+            initPuzzle();
+            initElements(); // TO-DO: support for touch events
+
+            createProgressBar(); // TO-DO: make progress smoother
+            createPuzzleElements();
+
+            window.setTimeout(function () {
+                startGame();
+            }, 1500);
+        }, 3500);
+    }
+
+    function startGame() {
+        var height = _puzzleHeight - 45, // animBrickMarginTop = 45
+            newMarginTop = 3,
+            durationAnimation = 21000,
+            counter = durationAnimation / 1000,
+            pElelement = document.getElementById(_progressTextID),
+            brick = document.getElementById(_progressBrickID);
+
+        pElelement.innerHTML = counter;
+        var timer = setInterval(function () {
+            pElelement.innerHTML = counter--;
+            if (counter == 0) {
+                clearInterval(timer);
+                gameOver(); // add 'Game Over' text? 
+                return;
+            }
         }, 1000);
+
+        var startMSec = performance.now(), progress = 0;
+        function progressStep(currentMSec) {
+            progress = currentMSec - startMSec;
+
+            height = height - progress / durationAnimation * 1.5;
+            newMarginTop = newMarginTop + progress / durationAnimation * 1.5;
+
+            brick.style.marginTop = newMarginTop + 'px';
+            brick.style.height = height + 'px';
+
+            if (progress < durationAnimation && height > 40) {
+                requestAnimationFrame(progressStep);
+            }
+        }
+        requestAnimationFrame(progressStep);
+    };
+
+    function createStartGameCounter() {
+        var rootElement = document.getElementById(_rootElId);
+        rootElement.style.position = "relative";
+        rootElement.style.width = _puzzleWidth + "px";
+        rootElement.style.height = _puzzleHeight + "px";
+
+        var pElelement = document.createElement("p");
+        pElelement.style.position = "absolute";
+        pElelement.style.top = "50%";
+        pElelement.style.left = "50%";
+        pElelement.style.margin = "0px";
+        pElelement.style.transform = "translate(-50%, -50%)";
+        pElelement.style.color = "white";
+        pElelement.style.textShadow = "5px 5px 6px #000000";
+
+        document.getElementById(_rootElId).appendChild(pElelement);
+
+        var startMSec = performance.now(),
+            durationAnimation = 3000,
+            progress = 0,
+            fontSize1 = 0, fontSize2 = 0, fontSize3 = 0,
+            opacity1 = 1, opacity2 = 1, opacity3 = 1;
+
+        function counter(currentMSec) {
+            progress = currentMSec - startMSec;
+
+            if (progress >= 0 && progress <= 1000) {
+                pElelement.innerHTML = 3;
+                fontSize1 = fontSize1 + 10;
+                pElelement.style.fontSize = fontSize1 + "px";
+                opacity1 = (opacity1 > 0) ? opacity1 - 0.02 : 0,
+                pElelement.style.opacity = opacity1;
+            }
+            else
+                if (progress >= 1001 && progress <= 2000) {
+                    pElelement.innerHTML = 2;
+                    fontSize2 = fontSize2 + 10;
+                    pElelement.style.fontSize = fontSize2 + "px";
+                    opacity2 = (opacity2 > 0) ? opacity2 - 0.02 : 0,
+                    pElelement.style.opacity = opacity2;
+                }
+                else {
+                    pElelement.innerHTML = 1;
+                    fontSize3 = fontSize3 + 10;
+                    pElelement.style.fontSize = fontSize3 + "px";
+                    opacity3 = (opacity3 > 0) ? opacity3 - 0.02 : 0,
+                    pElelement.style.opacity = opacity3;
+                }
+
+            if (progress < durationAnimation) {
+                requestAnimationFrame(counter);
+            }
+        }
+
+        requestAnimationFrame(counter);
     }
 
     function initPuzzleBoardBasedOnImage(rowCount, colCount) {
-        var puzzleWidth = _img.width,
-            puzzleHeight = _img.height;
+        var puzzleWidth = _img.offsetWidth,
+            puzzleHeight = _img.offsetHeight;
         self.setPuzzleBoardOptions(rowCount, colCount, puzzleWidth, puzzleHeight);
     }
 
@@ -97,6 +195,9 @@
             barHeight = _puzzleHeight,
             barWidth = 40,
             imgSize = 35;
+
+        _progressTextID = "progressTextID";
+        _progressBrickID = "progressBrickID";
 
         // the progressBar container
         barContainer.style.width = barWidth + "px";
@@ -129,65 +230,23 @@
         brick.style.background = "#768ed4";
         brick.style.margin = "auto";
         brick.style.marginTop = brickMarginTop + "px";
+        brick.id = _progressBrickID;
         brickContainer.appendChild(brick);
 
         // counter
-        pElelement.innerHTML = "12";
         pElelement.style.font = "25px arial";
         pElelement.style.width = barWidth + "px";
         pElelement.style.position = "absolute";
         pElelement.style.bottom = 0;
-        pElelement.style.margin = "0px";
+        pElelement.style.margin = "0px 0px 10px 0px";
         pElelement.style.color = "white";
         pElelement.style.textAlign = "center";
+        pElelement.id = _progressTextID;
         brickContainer.appendChild(pElelement);
 
-        var height = brickHeight - brickMarginTop,
-            newHeight,
-            newMarginTop,
-            durationAnimation = 21000,
-            counter = 12;
+        //_canvas.addEventListener('click', startTimer);
 
-        brick.onclick = function () {
-            animate({
-                duration: durationAnimation,
-                timing: function (timeFraction) {
-                    return Math.pow(timeFraction, 2);
-                },
-                draw: function (progress) {
-                    newHeight = height - (progress * 50);
-                    height = (newHeight > 0) ? newHeight : 0;
-                    newMarginTop = (barHeight - height) + brickMarginTop - animBrickMarginTop;
-
-                    brick.style.marginTop = newMarginTop + 'px';
-                    brick.style.height = height + 'px';
-
-                    // TO-DO: add counter
-                    //    pElelement.innerHTML = counter--;
-                }
-            });
-        };
-
-    }
-    function animate(_ref) {
-        var timing = _ref.timing,
-            draw = _ref.draw,
-            duration = _ref.duration;
-
-        var start = performance.now();
-        requestAnimationFrame(function animate(time) {
-            var timeFraction = (time - start) / duration;
-
-            if (timeFraction > 1) timeFraction = 1;
-
-            var progress = timing(timeFraction);
-
-            draw(progress);
-            if (timeFraction < 1) {
-                requestAnimationFrame(animate);
-            }
-        });
-    }
+     }
 
     function initCanvas() {
         _canvas = document.createElement('canvas');;
@@ -210,7 +269,7 @@
         _canvasCtx.drawImage(_img, 0, 0, _puzzleWidth, _puzzleHeight, 0, 0, _puzzleWidth, _puzzleHeight);
     }
 
-    function createElements() {
+    function initElements() {
         var i,
             element,
             xPos = 0,
@@ -229,41 +288,7 @@
         }
     }
 
-    function addTimer(text, speed) {
-        var step = 20, steps = 200;
-
-        window.requestAnimationFrame(function () { drawTimer(text, speed) });
-
-        var drawTimer = function (text, speed) {
-            step = step + 1;
-
-            _canvasCtx.globalCompositeOperation = 'destination-over';
-            _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight); // clear canvas
-
-            _canvasCtx.fillStyle = 'white';
-            _canvasCtx.textAlign = "center";
-            _canvasCtx.save();
-            _canvasCtx.translate(_canvas.width / 2, _canvas.height / 2);
-
-            if (step < steps) {
-                _canvasCtx.save();
-                _canvasCtx.font = step + "pt Helvetica";
-                _canvasCtx.fillText(text, 0, 0);
-                _canvasCtx.restore();
-            }
-
-            _canvasCtx.restore();
-
-            _canvasCtx.drawImage(_img, 0, 0, _puzzleWidth, _puzzleHeight, 0, 0, _puzzleWidth, _puzzleHeight);
-
-            if (step < steps)
-                window.requestAnimationFrame(function () { drawTimer(text, speed) })
-            else
-                return 1;
-        }
-    }
-
-    function startGame() {
+    function createPuzzleElements() {
         _elements = shuffleArray(_elements);
         _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight);
 
@@ -284,7 +309,7 @@
                 yPos += _elementHeight;
             }
         }
-        document.addEventListener('mousedown', onPuzzleClick);
+        _canvas.addEventListener('mousedown', onPuzzleClick);
     }
 
     function onPuzzleClick(e) {
@@ -311,10 +336,11 @@
                 _elementWidth, _elementHeight);
             _canvasCtx.restore();
 
-            document.addEventListener('mousemove', updatePuzzle);
-            document.addEventListener('mouseup', elementDropped);
+            _canvas.addEventListener('mousemove', updatePuzzle);
+            _canvas.addEventListener('mouseup', elementDropped);
         }
     }
+
     function checkClickedElement() {
         var i;
         var element;
@@ -332,6 +358,7 @@
         }
         return null;
     }
+
     function updatePuzzle(e) {
         _currentDropElement = null;
         if (e.layerX || e.layerX == 0) {
@@ -391,9 +418,10 @@
         _canvasCtx.restore();
         _canvasCtx.strokeRect(_mouse.x - (_elementWidth / 2), _mouse.y - (_elementHeight / 2), _elementWidth, _elementHeight);
     }
+
     function elementDropped(e) {
-        document.removeEventListener('mousemove', updatePuzzle);
-        document.removeEventListener('mouseup', elementDropped);
+        _canvas.removeEventListener('mousemove', updatePuzzle);
+        _canvas.removeEventListener('mouseup', elementDropped);
 
         if (_currentDropElement != null) {
             var tmp = { xPos: _currentElement.xPos, yPos: _currentElement.yPos };
@@ -404,6 +432,7 @@
         }
         resetPuzzleAndCheckWin();
     }
+
     function resetPuzzleAndCheckWin() {
         _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight);
         var gameWin = true;
@@ -429,10 +458,11 @@
             setTimeout(gameOver, 500);
         }
     }
+
     function gameOver() {
-        document.removeEventListener('mousemove', updatePuzzle);
-        document.removeEventListener('mouseup', elementDropped);
-        document.removeEventListener('mouseup', elementDropped);
+        _canvas.removeEventListener('mousemove', updatePuzzle);
+        _canvas.removeEventListener('mouseup', elementDropped);
+        _canvas.removeEventListener('mouseup', elementDropped);
 
         initPuzzle();
     }
