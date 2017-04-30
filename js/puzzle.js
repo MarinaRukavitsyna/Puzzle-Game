@@ -43,9 +43,14 @@
         _tileHeight = Math.floor(puzzleHeight / rowCount);
     }
 
-    self.setPuzzleBoardDimention = function (rowCount, colCount, puzzleWidth, puzzleHeight) {
+    self.setPuzzleBoardDimention = function (rowCount, colCount) {
         _rowCount = rowCount;
         _colCount = colCount;
+    }
+
+    self.setPuzzleBoardSize = function (puzzleWidth, puzzleHeight) {
+        _puzzleWidth = puzzleWidth;
+        _puzzleHeight = puzzleHeight;
         _tileWidth = Math.floor(puzzleWidth / colCount);
         _tileHeight = Math.floor(puzzleHeight / rowCount);
     }
@@ -59,11 +64,12 @@
             createFrame();
             initCanvas();
             initPuzzle();
-            initTiles(); // TO-DO: support for touch events
+            initTiles(); // TO-DO: support MSPointer events for Win 
 
             createProgressBar(); 
             createPuzzleTiles();
 
+            // TO-DO: start game by timer or when a user clicks canvas
             window.setTimeout(function () {
                 startGame(21000); // TO-DO: make progress smoother
             }, 1500);
@@ -82,7 +88,7 @@
             pElelement.innerHTML = counter--;
             if (counter === 0) {
                 clearInterval(timer);
-                gameOver(); // add the 'Game Over' text? 
+                gameOver(); // TO-DO: decide what should happen when a game is over
                 return;
             }
         }, 1000);
@@ -105,7 +111,8 @@
     }
 
     function createStartGameCounter() {
-        document.body.style.overflow = "hidden"; // hide a browser scroll bar in IE
+        // hide a browser scroll bar in IE to fix the IE issue
+        document.body.style.overflow = "hidden"; 
 
         var rootElement = document.getElementById(_rootElId);
         rootElement.style.position = "relative";
@@ -311,7 +318,10 @@
                 yPos += _tileHeight;
             }
         }
-        _canvas.addEventListener('mousedown', onPuzzleClick);
+        if ("ontouchstart" in document.documentElement) 
+            _canvas.addEventListener('touchstart', onPuzzleClick);
+        else
+            _canvas.addEventListener('mousedown', onPuzzleClick);
 
     }
 
@@ -339,8 +349,14 @@
                 _tileWidth, _tileHeight);
             _canvasCtx.restore();
 
-            _canvas.addEventListener('mousemove', updatePuzzle);
-            _canvas.addEventListener('mouseup', onTileDropped);
+            if ("ontouchstart" in document.documentElement) {
+                _canvas.addEventListener('touchmove', updatePuzzle);
+                _canvas.addEventListener('touchend', onTileDropped);
+            }
+            else {
+                _canvas.addEventListener('mousemove', updatePuzzle);
+                _canvas.addEventListener('mouseup', onTileDropped);
+            }
         }
     }
 
@@ -423,8 +439,14 @@
     }
 
     function onTileDropped(e) {
-        _canvas.removeEventListener('mousemove', updatePuzzle);
-        _canvas.removeEventListener('mouseup', onTileDropped);
+        if ("ontouchstart" in document.documentElement) {
+            _canvas.removeEventListener('touchmove', updatePuzzle);
+            _canvas.removeEventListener('touchend', onTileDropped);
+        }
+        else {
+            _canvas.removeEventListener('mousemove', updatePuzzle);
+            _canvas.removeEventListener('mouseup', onTileDropped);
+        }
 
         if (_currentDropTile != null) {
             var tmp = { xPos: _currentTile.xPos, yPos: _currentTile.yPos };
@@ -463,9 +485,16 @@
     }
 
     function gameOver() {
-        _canvas.removeEventListener('mousemove', updatePuzzle);
-        _canvas.removeEventListener('mouseup', onTileDropped);
-        _canvas.removeEventListener('mousedown', onPuzzleClick);
+        if ("ontouchstart" in document.documentElement) {
+            _canvas.removeEventListener('touchstart', updatePuzzle);
+            _canvas.removeEventListener('touchmove', onTileDropped);
+            _canvas.removeEventListener('touchend', onPuzzleClick);
+        }
+        else {
+            _canvas.removeEventListener('mousemove', updatePuzzle);
+            _canvas.removeEventListener('mouseup', onTileDropped);
+            _canvas.removeEventListener('mousedown', onPuzzleClick);
+        }
 
         initPuzzle();
     }
