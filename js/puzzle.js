@@ -57,7 +57,11 @@
 
     function createPuzzleBoard(e) {
         document.getElementById(_rootElId).appendChild(_img);
-        initPuzzleBoardBasedOnImage(4, 4);
+        if ("ontouchstart" in document.documentElement) 
+            initPuzzleBoardBasedOnMobileSize(4, 4);
+        else
+            initPuzzleBoardBasedOnImage(4, 4);
+
         createStartGameCounter();
 
         window.setTimeout(function () {
@@ -66,12 +70,12 @@
             initPuzzle();
             initTiles(); // TO-DO: support MSPointer events for Win 
 
-            createProgressBar(); 
+            createProgressBar();
             createPuzzleTiles();
 
-            // TO-DO: start game by timer or when a user clicks canvas
+            // TO-DO: start game by timer or when a user clicks a canvas
             window.setTimeout(function () {
-                startGame(21000); // TO-DO: make progress smoother
+                startGame(21000);
             }, 1500);
         }, 3500);
     }
@@ -86,33 +90,45 @@
         pElelement.innerHTML = counter;
         var timer = setInterval(function () {
             pElelement.innerHTML = counter--;
-            if (counter === 0) {
+            if (counter === -1) {
                 clearInterval(timer);
                 gameOver(); // TO-DO: decide what should happen when a game is over
                 return;
             }
         }, 1000);
 
-        var startMSec = performance.now(), progress = 0;
-        function progressStep(currentMSec) {
-            progress = currentMSec - startMSec;
+        var start = Date.now(),
+            fps = 24,
+            progress = height / (durationAnimation / fps);
 
-            height = height - progress / durationAnimation * 1.5;
-            newMarginTop = newMarginTop + progress / durationAnimation * 1.5;
+        var progressStep = setInterval(function () {
+            var timePassed = Date.now() - start;
+
+            if (timePassed >= durationAnimation + 100) {
+                brick.style.height = '0px';
+                clearInterval(progressStep);
+                return;
+            }
+            drawProgress();
+        }, fps);
+
+        function drawProgress() {
+            if (height <= 0) {
+                brick.style.height = '0px';
+                return;
+            }
+
+            height = height - progress;
+            newMarginTop = newMarginTop + progress;
 
             brick.style.marginTop = newMarginTop + 'px';
             brick.style.height = height + 'px';
-
-            if (progress < durationAnimation && height > 40) {
-                requestAnimationFrame(progressStep);
-            }
         }
-        requestAnimationFrame(progressStep);
     }
 
     function createStartGameCounter() {
         // hide a browser scroll bar in IE to fix the IE issue
-        document.body.style.overflow = "hidden"; 
+        document.body.style.overflow = "hidden";
 
         var rootElement = document.getElementById(_rootElId);
         rootElement.style.position = "relative";
@@ -176,6 +192,16 @@
     function initPuzzleBoardBasedOnImage(rowCount, colCount) {
         var puzzleWidth = _img.offsetWidth,
             puzzleHeight = _img.offsetHeight;
+        self.setPuzzleBoardOptions(rowCount, colCount, puzzleWidth, puzzleHeight);
+    }
+
+    function initPuzzleBoardBasedOnMobileSize(rowCount, colCount) {
+        var ratio = Math.min(screen.width / _img.width, screen.height / _img.height);
+        var puzzleWidth = _img.width * ratio,
+            puzzleHeight = _img.height * ratio;
+
+        _img.width = puzzleWidth;
+        _img.height = puzzleHeight;
         self.setPuzzleBoardOptions(rowCount, colCount, puzzleWidth, puzzleHeight);
     }
 
@@ -318,7 +344,7 @@
                 yPos += _tileHeight;
             }
         }
-        if ("ontouchstart" in document.documentElement) 
+        if ("ontouchstart" in document.documentElement)
             _canvas.addEventListener('touchstart', onPuzzleClick);
         else
             _canvas.addEventListener('mousedown', onPuzzleClick);
