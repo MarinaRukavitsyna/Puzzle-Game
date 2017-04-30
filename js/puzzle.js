@@ -8,22 +8,22 @@
         _rootElId,
         _mouse,
         _img,
-        _elements,
+        _tiles,
         _rowCount,
         _colCount,
         _puzzleWidth,
         _puzzleHeight,
-        _elementWidth,
-        _elementHeight,
-        _currentElement,
-        _currentDropElement,
+        _tileWidth,
+        _tileHeight,
+        _currentTile,
+        _currentDropTile,
         _progressTextID,
         _progressBrickID;
 
     function init() {
-        if (document.getElementById(rootElId).length == 0) {
-            console.log("Element with " + rootElId + "ID does not exist");
-            throw new Error("Element with " + rootElId + "ID does not exist");
+        if (document.getElementById(rootElId).length === 0) {
+            console.log("tile with " + rootElId + "ID does not exist");
+            throw new Error("tile with " + rootElId + "ID does not exist");
         }
         else {
             _rootElId = rootElId;
@@ -39,41 +39,40 @@
         _colCount = colCount;
         _puzzleWidth = puzzleWidth;
         _puzzleHeight = puzzleHeight;
-        _elementWidth = Math.floor(puzzleWidth / colCount);
-        _elementHeight = Math.floor(puzzleHeight / rowCount);
+        _tileWidth = Math.floor(puzzleWidth / colCount);
+        _tileHeight = Math.floor(puzzleHeight / rowCount);
     }
 
     self.setPuzzleBoardDimention = function (rowCount, colCount, puzzleWidth, puzzleHeight) {
         _rowCount = rowCount;
         _colCount = colCount;
-        _elementWidth = Math.floor(puzzleWidth / colCount);
-        _elementHeight = Math.floor(puzzleHeight / rowCount);
+        _tileWidth = Math.floor(puzzleWidth / colCount);
+        _tileHeight = Math.floor(puzzleHeight / rowCount);
     }
 
     function createPuzzleBoard(e) {
         document.getElementById(_rootElId).appendChild(_img);
         initPuzzleBoardBasedOnImage(4, 4);
-        createStartGameCounter(); // TO-DO: check scroll bar in IE
+        createStartGameCounter();
 
         window.setTimeout(function () {
             createFrame();
             initCanvas();
             initPuzzle();
-            initElements(); // TO-DO: support for touch events
+            initTiles(); // TO-DO: support for touch events
 
-            createProgressBar(); // TO-DO: make progress smoother
-            createPuzzleElements();
+            createProgressBar(); 
+            createPuzzleTiles();
 
             window.setTimeout(function () {
-                startGame();
+                startGame(21000); // TO-DO: make progress smoother
             }, 1500);
         }, 3500);
     }
 
-    function startGame() {
+    function startGame(durationAnimation) {
         var height = _puzzleHeight - 45, // animBrickMarginTop = 45
             newMarginTop = 3,
-            durationAnimation = 21000,
             counter = durationAnimation / 1000,
             pElelement = document.getElementById(_progressTextID),
             brick = document.getElementById(_progressBrickID);
@@ -81,9 +80,9 @@
         pElelement.innerHTML = counter;
         var timer = setInterval(function () {
             pElelement.innerHTML = counter--;
-            if (counter == 0) {
+            if (counter === 0) {
                 clearInterval(timer);
-                gameOver(); // add 'Game Over' text? 
+                gameOver(); // add the 'Game Over' text? 
                 return;
             }
         }, 1000);
@@ -103,9 +102,11 @@
             }
         }
         requestAnimationFrame(progressStep);
-    };
+    }
 
     function createStartGameCounter() {
+        document.body.style.overflow = "hidden"; // hide a browser scroll bar in IE
+
         var rootElement = document.getElementById(_rootElId);
         rootElement.style.position = "relative";
         rootElement.style.width = _puzzleWidth + "px";
@@ -157,6 +158,9 @@
             if (progress < durationAnimation) {
                 requestAnimationFrame(counter);
             }
+            else
+                document.body.style.overflow = "initial";
+
         }
 
         requestAnimationFrame(counter);
@@ -224,7 +228,7 @@
         brickContainer.style.position = "relative";
         barContainer.appendChild(brickContainer);
 
-        // the progress element
+        // the progress tile
         brick.style.width = barWidth - 6 + "px";
         brick.style.height = brickHeight + "px";
         brick.style.background = "#768ed4";
@@ -244,12 +248,10 @@
         pElelement.id = _progressTextID;
         brickContainer.appendChild(pElelement);
 
-        //_canvas.addEventListener('click', startTimer);
-
-     }
+    }
 
     function initCanvas() {
-        _canvas = document.createElement('canvas');;
+        _canvas = document.createElement('canvas');
         _canvasCtx = _canvas.getContext('2d');
         _canvas.width = _puzzleWidth;
         _canvas.height = _puzzleHeight;
@@ -262,144 +264,145 @@
     }
 
     function initPuzzle() {
-        _elements = [];
+        _tiles = [];
         _mouse = { x: 0, y: 0 };
-        _currentElement = null;
-        _currentDropElement = null;
+        _currentTile = null;
+        _currentDropTile = null;
         _canvasCtx.drawImage(_img, 0, 0, _puzzleWidth, _puzzleHeight, 0, 0, _puzzleWidth, _puzzleHeight);
     }
 
-    function initElements() {
+    function initTiles() {
         var i,
-            element,
+            tile,
             xPos = 0,
             yPos = 0;
 
         for (i = 0; i < 4 * 4; i++) {
-            element = {};
-            element.sx = xPos;
-            element.sy = yPos;
-            _elements.push(element);
-            xPos += _elementWidth;
+            tile = {};
+            tile.sx = xPos;
+            tile.sy = yPos;
+            _tiles.push(tile);
+            xPos += _tileWidth;
             if (xPos >= _puzzleWidth) {
                 xPos = 0;
-                yPos += _elementHeight;
+                yPos += _tileHeight;
             }
         }
     }
 
-    function createPuzzleElements() {
-        _elements = shuffleArray(_elements);
+    function createPuzzleTiles() {
+        _tiles = shuffleArray(_tiles);
         _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight);
 
         var i,
-           element,
+           tile,
            xPos = 0,
            yPos = 0;
 
-        for (i = 0; i < _elements.length; i++) {
-            element = _elements[i];
-            element.xPos = xPos;
-            element.yPos = yPos;
-            _canvasCtx.drawImage(_img, element.sx, element.sy, _elementWidth, _elementHeight, xPos, yPos, _elementWidth, _elementHeight);
-            _canvasCtx.strokeRect(xPos, yPos, _elementWidth, _elementHeight);
-            xPos += _elementWidth;
+        for (i = 0; i < _tiles.length; i++) {
+            tile = _tiles[i];
+            tile.xPos = xPos;
+            tile.yPos = yPos;
+            _canvasCtx.drawImage(_img, tile.sx, tile.sy, _tileWidth, _tileHeight, xPos, yPos, _tileWidth, _tileHeight);
+            _canvasCtx.strokeRect(xPos, yPos, _tileWidth, _tileHeight);
+            xPos += _tileWidth;
             if (xPos >= _puzzleWidth) {
                 xPos = 0;
-                yPos += _elementHeight;
+                yPos += _tileHeight;
             }
         }
         _canvas.addEventListener('mousedown', onPuzzleClick);
+
     }
 
     function onPuzzleClick(e) {
-        if (e.layerX || e.layerX == 0) {
+        if (e.layerX || e.layerX === 0) {
             _mouse.x = e.layerX - _canvas.offsetLeft;
             _mouse.y = e.layerY - _canvas.offsetTop;
         }
-        else if (e.offsetX || e.offsetX == 0) {
+        else if (e.offsetX || e.offsetX === 0) {
             _mouse.x = e.offsetX - _canvas.offsetLeft;
             _mouse.y = e.offsetY - _canvas.offsetTop;
         }
-        _currentElement = checkClickedElement();
-        if (_currentElement != null) {
-            _canvasCtx.clearRect(_currentElement.xPos, _currentElement.yPos, _elementWidth, _elementHeight);
+        _currentTile = checkClickedElement();
+        if (_currentTile != null) {
+            _canvasCtx.clearRect(_currentTile.xPos, _currentTile.yPos, _tileWidth, _tileHeight);
             _canvasCtx.save();
             _canvasCtx.globalAlpha = .9;
             _canvasCtx.drawImage(_img,
-                _currentElement.sx,
-                _currentElement.sy,
-                _elementWidth,
-                _elementHeight,
-                _mouse.x - (_elementWidth / 2),
-                _mouse.y - (_elementHeight / 2),
-                _elementWidth, _elementHeight);
+                _currentTile.sx,
+                _currentTile.sy,
+                _tileWidth,
+                _tileHeight,
+                _mouse.x - (_tileWidth / 2),
+                _mouse.y - (_tileHeight / 2),
+                _tileWidth, _tileHeight);
             _canvasCtx.restore();
 
             _canvas.addEventListener('mousemove', updatePuzzle);
-            _canvas.addEventListener('mouseup', elementDropped);
+            _canvas.addEventListener('mouseup', onTileDropped);
         }
     }
 
     function checkClickedElement() {
         var i;
-        var element;
-        for (i = 0; i < _elements.length; i++) {
-            element = _elements[i];
-            if (_mouse.x < element.xPos
-                || _mouse.x > (element.xPos + _elementWidth)
-                || _mouse.y < element.yPos
-                || _mouse.y > (element.yPos + _elementHeight)) {
-                //element does not fit
+        var tile;
+        for (i = 0; i < _tiles.length; i++) {
+            tile = _tiles[i];
+            if (_mouse.x < tile.xPos
+                || _mouse.x > (tile.xPos + _tileWidth)
+                || _mouse.y < tile.yPos
+                || _mouse.y > (tile.yPos + _tileHeight)) {
+                //tile does not fit
             }
             else {
-                return element;
+                return tile;
             }
         }
         return null;
     }
 
     function updatePuzzle(e) {
-        _currentDropElement = null;
-        if (e.layerX || e.layerX == 0) {
+        _currentDropTile = null;
+        if (e.layerX || e.layerX === 0) {
             _mouse.x = e.layerX - _canvas.offsetLeft;
             _mouse.y = e.layerY - _canvas.offsetTop;
         }
-        else if (e.offsetX || e.offsetX == 0) {
+        else if (e.offsetX || e.offsetX === 0) {
             _mouse.x = e.offsetX - _canvas.offsetLeft;
             _mouse.y = e.offsetY - _canvas.offsetTop;
         }
         _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight);
         var i;
-        var element;
-        for (i = 0; i < _elements.length; i++) {
-            element = _elements[i];
-            if (element == _currentElement) {
+        var tile;
+        for (i = 0; i < _tiles.length; i++) {
+            tile = _tiles[i];
+            if (tile == _currentTile) {
                 continue;
             }
             _canvasCtx.drawImage(_img,
-                element.sx,
-                element.sy,
-                _elementWidth,
-                _elementHeight,
-                element.xPos,
-                element.yPos,
-                _elementWidth,
-                _elementHeight);
-            _canvasCtx.strokeRect(element.xPos, element.yPos, _elementWidth, _elementHeight);
-            if (_currentDropElement == null) {
-                if (_mouse.x < element.xPos
-                    || _mouse.x > (element.xPos + _elementWidth)
-                    || _mouse.y < element.yPos
-                    || _mouse.y > (element.yPos + _elementHeight)) {
-                    //element does not fit
+                tile.sx,
+                tile.sy,
+                _tileWidth,
+                _tileHeight,
+                tile.xPos,
+                tile.yPos,
+                _tileWidth,
+                _tileHeight);
+            _canvasCtx.strokeRect(tile.xPos, tile.yPos, _tileWidth, _tileHeight);
+            if (_currentDropTile == null) {
+                if (_mouse.x < tile.xPos
+                    || _mouse.x > (tile.xPos + _tileWidth)
+                    || _mouse.y < tile.yPos
+                    || _mouse.y > (tile.yPos + _tileHeight)) {
+                    //tile does not fit
                 }
                 else {
-                    _currentDropElement = element;
+                    _currentDropTile = tile;
                     _canvasCtx.save();
                     _canvasCtx.globalAlpha = .4;
                     _canvasCtx.fillStyle = PUZZLE_HOVER_COLOR;
-                    _canvasCtx.fillRect(_currentDropElement.xPos, _currentDropElement.yPos, _elementWidth, _elementHeight);
+                    _canvasCtx.fillRect(_currentDropTile.xPos, _currentDropTile.yPos, _tileWidth, _tileHeight);
                     _canvasCtx.restore();
                 }
             }
@@ -407,28 +410,28 @@
         _canvasCtx.save();
         _canvasCtx.globalAlpha = .6;
         _canvasCtx.drawImage(_img,
-            _currentElement.sx,
-            _currentElement.sy,
-            _elementWidth,
-            _elementHeight,
-            _mouse.x - (_elementWidth / 2),
-            _mouse.y - (_elementHeight / 2),
-            _elementWidth,
-            _elementHeight);
+            _currentTile.sx,
+            _currentTile.sy,
+            _tileWidth,
+            _tileHeight,
+            _mouse.x - (_tileWidth / 2),
+            _mouse.y - (_tileHeight / 2),
+            _tileWidth,
+            _tileHeight);
         _canvasCtx.restore();
-        _canvasCtx.strokeRect(_mouse.x - (_elementWidth / 2), _mouse.y - (_elementHeight / 2), _elementWidth, _elementHeight);
+        _canvasCtx.strokeRect(_mouse.x - (_tileWidth / 2), _mouse.y - (_tileHeight / 2), _tileWidth, _tileHeight);
     }
 
-    function elementDropped(e) {
+    function onTileDropped(e) {
         _canvas.removeEventListener('mousemove', updatePuzzle);
-        _canvas.removeEventListener('mouseup', elementDropped);
+        _canvas.removeEventListener('mouseup', onTileDropped);
 
-        if (_currentDropElement != null) {
-            var tmp = { xPos: _currentElement.xPos, yPos: _currentElement.yPos };
-            _currentElement.xPos = _currentDropElement.xPos;
-            _currentElement.yPos = _currentDropElement.yPos;
-            _currentDropElement.xPos = tmp.xPos;
-            _currentDropElement.yPos = tmp.yPos;
+        if (_currentDropTile != null) {
+            var tmp = { xPos: _currentTile.xPos, yPos: _currentTile.yPos };
+            _currentTile.xPos = _currentDropTile.xPos;
+            _currentTile.yPos = _currentDropTile.yPos;
+            _currentDropTile.xPos = tmp.xPos;
+            _currentDropTile.yPos = tmp.yPos;
         }
         resetPuzzleAndCheckWin();
     }
@@ -437,20 +440,20 @@
         _canvasCtx.clearRect(0, 0, _puzzleWidth, _puzzleHeight);
         var gameWin = true;
         var i;
-        var element;
-        for (i = 0; i < _elements.length; i++) {
-            element = _elements[i];
+        var tile;
+        for (i = 0; i < _tiles.length; i++) {
+            tile = _tiles[i];
             _canvasCtx.drawImage(_img,
-                element.sx,
-                element.sy,
-                _elementWidth,
-                _elementHeight,
-                element.xPos,
-                element.yPos,
-                _elementWidth,
-                _elementHeight);
-            _canvasCtx.strokeRect(element.xPos, element.yPos, _elementWidth, _elementHeight);
-            if (element.xPos != element.sx || element.yPos != element.sy) {
+                tile.sx,
+                tile.sy,
+                _tileWidth,
+                _tileHeight,
+                tile.xPos,
+                tile.yPos,
+                _tileWidth,
+                _tileHeight);
+            _canvasCtx.strokeRect(tile.xPos, tile.yPos, _tileWidth, _tileHeight);
+            if (tile.xPos != tile.sx || tile.yPos != tile.sy) {
                 gameWin = false;
             }
         }
@@ -461,8 +464,8 @@
 
     function gameOver() {
         _canvas.removeEventListener('mousemove', updatePuzzle);
-        _canvas.removeEventListener('mouseup', elementDropped);
-        _canvas.removeEventListener('mouseup', elementDropped);
+        _canvas.removeEventListener('mouseup', onTileDropped);
+        _canvas.removeEventListener('mousedown', onPuzzleClick);
 
         initPuzzle();
     }
