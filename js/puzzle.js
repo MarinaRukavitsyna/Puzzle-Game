@@ -26,6 +26,8 @@
             throw new Error("tile with " + rootElId + "ID does not exist");
         }
         else {
+            _rowCount = (rowCount == undefined) ? 4 : rowCount;
+            _colCount = (colCount == undefined) ? 4 : colCount;
             _rootElId = rootElId;
 
             _img = new Image();
@@ -57,10 +59,8 @@
 
     function createPuzzleBoard(e) {
         document.getElementById(_rootElId).appendChild(_img);
-        if ("ontouchstart" in document.documentElement) 
-            initPuzzleBoardBasedOnMobileSize(4, 4);
-        else
-            initPuzzleBoardBasedOnImage(4, 4);
+       // TO-DO: provide support for small devices
+       initPuzzleBoardBasedOnImage();
 
         createStartGameCounter();
 
@@ -189,20 +189,20 @@
         requestAnimationFrame(counter);
     }
 
-    function initPuzzleBoardBasedOnImage(rowCount, colCount) {
+    function initPuzzleBoardBasedOnImage() {
         var puzzleWidth = _img.offsetWidth,
             puzzleHeight = _img.offsetHeight;
-        self.setPuzzleBoardOptions(rowCount, colCount, puzzleWidth, puzzleHeight);
+        self.setPuzzleBoardOptions(_rowCount, _colCount, puzzleWidth, puzzleHeight);
     }
 
-    function initPuzzleBoardBasedOnMobileSize(rowCount, colCount) {
+    function initPuzzleBoardBasedOnMobileSize() {
         var ratio = Math.min(screen.width / _img.width, screen.height / _img.height);
         var puzzleWidth = _img.width * ratio,
             puzzleHeight = _img.height * ratio;
 
         _img.width = puzzleWidth;
         _img.height = puzzleHeight;
-        self.setPuzzleBoardOptions(rowCount, colCount, puzzleWidth, puzzleHeight);
+        self.setPuzzleBoardOptions(_rowCount, _colCount, puzzleWidth, puzzleHeight);
     }
 
     function createFrame() {
