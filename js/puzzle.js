@@ -21,9 +21,8 @@
         _progressBrickID;
 
     function init() {
-        if (document.getElementById(rootElId).length === 0) {
-            console.log("tile with " + rootElId + "ID does not exist");
-            throw new Error("tile with " + rootElId + "ID does not exist");
+        if ( !document.getElementById(rootElId)) {
+            throw new Error("A container with the " + rootElId + " ID does not exist");
         }
         else {
             _rowCount = (rowCount == undefined) ? 4 : rowCount;
